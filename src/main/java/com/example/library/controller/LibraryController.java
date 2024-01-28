@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.example.library.repository.*;
 import com.example.library.entity.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,7 +53,6 @@ public class LibraryController {
             return ResponseEntity.ok(savedBook);
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 
     @DeleteMapping("/books/{id}")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
@@ -108,5 +108,85 @@ public class LibraryController {
 
     // Borrowing endpoints
     // Implement methods for borrowing and returning books
+    // Allow a patron to borrow a book
+    @PostMapping("/borrow/{bookId}/patron/{patronId}")
+    public ResponseEntity<?> borrowBook(
+            @PathVariable Long bookId,
+            @PathVariable Long patronId
+    ) {
+        Optional<Book> optionalBook = bookRepository.findById(bookId);
+        Optional<Patron> optionalPatron = patronRepository.findById(patronId);
 
+        if (!optionalBook.isPresent()) {
+            // Book not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book with ID " + bookId + " not found.");
+        }
+
+        if (!optionalPatron.isPresent()) {
+            // Patron not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Patron with ID " + patronId + " not found.");
+        }
+
+        Book book = optionalBook.get();
+        Patron patron = optionalPatron.get();
+
+        // Implement your business logic for borrowing here
+        // For example, check if the book is available for borrowing, set borrowDate, etc.
+
+        Optional<BorrowingRecord> ongoingBorrowingRecord =
+                borrowingRecordRepository.findByBookAndPatronAndReturnDateIsNull(book, patron);
+
+        if (!ongoingBorrowingRecord.isPresent()) {
+            // Book is available for borrowing
+
+            BorrowingRecord borrowingRecord = new BorrowingRecord();
+            borrowingRecord.setBook(book);
+            borrowingRecord.setPatron(patron);
+            borrowingRecord.setBorrowDate(LocalDate.now());
+
+            borrowingRecordRepository.save(borrowingRecord);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(borrowingRecord);
+        } else {
+            // Book is already borrowed
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Book is already borrowed.");
+        }
+    }
+
+
+
+    // Record the return of a borrowed book
+    @PutMapping("/return/{bookId}/patron/{patronId}")
+    public ResponseEntity<?> returnBook(
+            @PathVariable Long bookId,
+            @PathVariable Long patronId
+    ) {
+        Optional<Book> optionalBook = bookRepository.findById(bookId);
+        Optional<Patron> optionalPatron = patronRepository.findById(patronId);
+
+        if (!optionalBook.isPresent()) {
+            // Book not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book with ID " + bookId + " not found.");
+        }
+
+        if (!optionalPatron.isPresent()) {
+            // Patron not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Patron with ID " + patronId + " not found.");
+        }
+
+        Book book = optionalBook.get();
+        Patron patron = optionalPatron.get();
+
+        // Implement your business logic for returning here
+        // For example, check if the patron had borrowed the book, set returnDate, etc.
+
+        Optional<BorrowingRecord> optionalBorrowingRecord =
+                borrowingRecordRepository.findByBookAndPatronAndReturnDateIsNull(book, patron);
+
+        return optionalBorrowingRecord.map(borrowingRecord -> {
+            borrowingRecord.setReturnDate(LocalDate.now());
+            borrowingRecordRepository.save(borrowingRecord);
+            return ResponseEntity.ok(borrowingRecord);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }
