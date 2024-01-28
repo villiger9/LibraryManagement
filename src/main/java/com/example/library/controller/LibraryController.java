@@ -67,6 +67,44 @@ public class LibraryController {
 
     // Patron management endpoints
     // Implement similar methods for patrons
+    @GetMapping("/patrons")
+    public List<Patron> getAllPatrons() {
+        return patronRepository.findAll();
+    }
+
+    @GetMapping("/patrons/{id}")
+    public ResponseEntity<Patron> getPatronById(@PathVariable Long id) {
+        Optional<Patron> optionalPatron = patronRepository.findById(id);
+        return optionalPatron.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/patrons")
+    public ResponseEntity<Patron> addPatron(@RequestBody Patron patron) {
+        Patron savedPatron = patronRepository.save(patron);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedPatron);
+    }
+
+    @PutMapping("/patrons/{id}")
+    public ResponseEntity<Patron> updatePatron(@PathVariable Long id, @RequestBody Patron updatedPatron) {
+        Optional<Patron> optionalPatron = patronRepository.findById(id);
+        return optionalPatron.map(patron -> {
+            updatedPatron.setId(id);  // Set the ID from the path variable
+            Patron savedPatron = patronRepository.save(updatedPatron);
+            return ResponseEntity.ok(savedPatron);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/patrons/{id}")
+    public ResponseEntity<Void> deletePatron(@PathVariable Long id) {
+        Optional<Patron> optionalPatron = patronRepository.findById(id);
+        if (optionalPatron.isPresent()) {
+            patronRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     // Borrowing endpoints
     // Implement methods for borrowing and returning books
