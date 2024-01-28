@@ -47,11 +47,12 @@ public class LibraryController {
     public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book updatedBook) {
         Optional<Book> optionalBook = bookRepository.findById(id);
         return optionalBook.map(book -> {
-            updatedBook.setId(book.getId());
+            updatedBook.setId(id);  // Set the ID from the path variable
             Book savedBook = bookRepository.save(updatedBook);
             return ResponseEntity.ok(savedBook);
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
+
 
     @DeleteMapping("/books/{id}")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
