@@ -44,8 +44,8 @@ public class LibraryController {
     private MeterRegistry meterRegistry;
 
     // Book management endpoints
-    @Timed(value = "library.getAllBooks", description = "Time taken to fetch all books")
     @GetMapping("/books")
+    @Timed("getAllBooks")
     public ResponseEntity<?> getAllBooks() {
         try {
             logger.info("Fetching all books");
