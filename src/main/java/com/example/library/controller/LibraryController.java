@@ -153,25 +153,18 @@ public class LibraryController {
         }
     }
 
-
-
     // Record the return of a borrowed book
     @PutMapping("/return/{bookId}/patron/{patronId}")
-    public ResponseEntity<?> returnBook(
+    public String returnBook(
             @PathVariable Long bookId,
             @PathVariable Long patronId
     ) {
         Optional<Book> optionalBook = bookRepository.findById(bookId);
         Optional<Patron> optionalPatron = patronRepository.findById(patronId);
 
-        if (!optionalBook.isPresent()) {
-            // Book not found
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book with ID " + bookId + " not found.");
-        }
-
-        if (!optionalPatron.isPresent()) {
-            // Patron not found
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Patron with ID " + patronId + " not found.");
+        if (!optionalBook.isPresent() || !optionalPatron.isPresent()) {
+            // Book or Patron not found
+            return "Book or Patron not found. Book ID: " + bookId + ", Patron ID: " + patronId;
         }
 
         Book book = optionalBook.get();
@@ -183,10 +176,14 @@ public class LibraryController {
         Optional<BorrowingRecord> optionalBorrowingRecord =
                 borrowingRecordRepository.findByBookAndPatronAndReturnDateIsNull(book, patron);
 
-        return optionalBorrowingRecord.map(borrowingRecord -> {
+        if (optionalBorrowingRecord.isPresent()) {
+            BorrowingRecord borrowingRecord = optionalBorrowingRecord.get();
             borrowingRecord.setReturnDate(LocalDate.now());
             borrowingRecordRepository.save(borrowingRecord);
-            return ResponseEntity.ok(borrowingRecord);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+            return "Book returned successfully. Borrowing Record ID: " + borrowingRecord.getId();
+        } else {
+            // Borrowing record not found
+            return "Borrowing record not found for Book ID: " + bookId + ", Patron ID: " + patronId;
+        }
     }
 }
