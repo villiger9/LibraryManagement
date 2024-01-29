@@ -1,5 +1,6 @@
 package com.example.library.controller;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.validation.BindingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.micrometer.core.annotation.Timed;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -38,11 +40,17 @@ public class LibraryController {
     @Autowired
     private BorrowingRecordRepository borrowingRecordRepository;
 
+    @Autowired
+    private MeterRegistry meterRegistry;
+
     // Book management endpoints
+    @Timed(value = "library.getAllBooks", description = "Time taken to fetch all books")
     @GetMapping("/books")
     public ResponseEntity<?> getAllBooks() {
         try {
+            logger.info("Fetching all books");
             List<Book> books = bookRepository.findAll();
+            logger.info("Fetched all books successfully");
             return ResponseEntity.ok(books);
         } catch (Exception e) {
             // Log the exception for further investigation
